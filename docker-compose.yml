@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  web:
+    # Replace with your actual username and repo name lowercase
+    # This will be overridden or needs to be set in the .env or hardcoded
+    # ideally: image: ghcr.io/your-username/relact-backend:latest
+    # implementing a generic one here, user needs to update it
+    image: ghcr.io/byatuljain/relact-backend:latest
+    container_name: relact_backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./uploads:/app/uploads
+      # We don't mount .:/app anymore for production, we use the built image code.
+      # Only mount 'uploads' or other dynamic data folders.
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: postgres:15-alpine
+    container_name: relact_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    restart: always
+
+volumes:
+  postgres_data:
