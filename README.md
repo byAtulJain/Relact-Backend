@@ -125,19 +125,31 @@ Once the server is running, access the interactive API documentation:
 ## API Endpoints
 
 ### Authentication
+- `POST /auth/send-verification-code` - Send OTP for email verification
+- `POST /auth/verify-email` - Verify email OTP
 - `POST /auth/register` - Register new user
-- `POST /auth/login` - Login with username or email and get JWT token
+- `POST /auth/login` - Login with username/email & password
+- `POST /auth/google-login` - Login with Google ID Token
+- `POST /auth/google-register` - Register with Google ID Token
 - `POST /auth/logout` - Logout and blacklist token
+- `POST /auth/check-username` - Check username availability
+- `POST /auth/forgot-password` - Request password reset OTP
+- `POST /auth/verify-reset-code` - Verify password reset OTP
+- `POST /auth/reset-password` - Reset password with verified token
 - `GET /auth/me` - Get current user info
 
 ### Contacts
-- `POST /contacts/` - Create new contact (with automatic duplicate checking)
+- `POST /contacts/` - Create new contact
 - `GET /contacts/` - List all contacts (with filters)
-- `GET /contacts/without-folder` - List contacts without folder
+- `GET /contacts/without-folder` - List contacts not in any folder
+- `GET /contacts/favorites` - List favorite contacts
+- `PUT /contacts/{contact_id}/favorite` - Toggle favorite status
+- `PUT /contacts/{contact_id}/make-permanent` - Convert temporary contact to permanent
 - `GET /contacts/{contact_id}` - Get contact details
-- `PUT /contacts/{contact_id}` - Update contact (with automatic duplicate checking)
+- `PUT /contacts/{contact_id}` - Update contact
 - `DELETE /contacts/{contact_id}` - Delete contact
 - `POST /contacts/cleanup-expired` - Delete expired temporary contacts
+- `GET /contacts/{contact_id}/folders` - Get folder assignment status for contact
 
 ### Folders
 - `POST /folders/` - Create folder
@@ -146,10 +158,13 @@ Once the server is running, access the interactive API documentation:
 - `PUT /folders/{folder_id}` - Update folder
 - `DELETE /folders/{folder_id}` - Delete folder
 - `PUT /folders/{folder_id}/contacts/{contact_id}` - Add contact to folder
+- `DELETE /folders/{folder_id}/contacts/{contact_id}` - Remove contact from folder
+- `POST /folders/{folder_id}/contacts/bulk` - Bulk add contacts to folder
 - `GET /folders/{folder_id}/contacts` - Get all contacts in folder
 - `GET /folders/{folder_id}/contacts-count` - Get contact count
 
 ### Notes
+- `GET /notes/notes` - Get all notes for user
 - `POST /notes/contacts/{contact_id}/notes` - Add note to contact
 - `GET /notes/contacts/{contact_id}/notes` - Get contact notes
 - `GET /notes/notes/{note_id}` - Get specific note
@@ -157,6 +172,7 @@ Once the server is running, access the interactive API documentation:
 - `DELETE /notes/notes/{note_id}` - Delete note
 
 ### Reminders
+- `GET /reminders/reminders` - Get all reminders for user
 - `POST /reminders/contacts/{contact_id}/reminders` - Create reminder
 - `GET /reminders/contacts/{contact_id}/reminders` - Get contact reminders
 - `GET /reminders/upcoming` - Get all upcoming reminders
@@ -165,6 +181,17 @@ Once the server is running, access the interactive API documentation:
 - `PUT /reminders/reminders/{reminder_id}` - Update reminder
 - `POST /reminders/reminders/{reminder_id}/complete` - Mark as completed
 - `DELETE /reminders/reminders/{reminder_id}` - Delete reminder
+
+### Admin & App Info
+- `GET /admin/` - Admin Dashboard (HTML)
+- `POST /admin/notifications` - Send broadcast/specific notifications
+- `POST /admin/content` - Update app content (privacy/about)
+- `GET /app-info/{info_type}` - Get app info (privacy, help, about)
+
+### Device Tokens
+- `POST /device-tokens/` - Register/Update device token
+- `DELETE /device-tokens/{token}` - Delete device token
+- `GET /device-tokens/me` - Get user's device tokens
 
 ## Usage Examples
 
