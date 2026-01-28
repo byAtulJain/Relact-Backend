@@ -1,0 +1,1362 @@
+{
+  "info": {
+    "_postman_id": "relact-smart-contact-manager",
+    "name": "Relact - Smart Contact Manager API",
+    "description": "Complete API collection for Relact Smart Contact Manager with JWT authentication, contact management, folders, notes, and reminders.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user@example.com\",\n    \"username\": \"john_doe\",\n    \"password\": \"Pass1234\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new user account. Password must be at least 6 characters."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.access_token) {",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.data.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "description": "Login to get JWT access token. You can use either username or email in the 'username' field. Token expires in 1 year and is automatically saved to collection variable.",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"atuljain\",\n  \"password\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login with Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.access_token) {",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.data.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "description": "Login using email address instead of username. Both work with the same endpoint.",
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user@example.com\",\n  \"password\": \"Pass1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Get current authenticated user information."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Logout and blacklist the current token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "Create Contact (Permanent)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"contact_id\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "John Smith",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "john@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "profile_photo",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "contact_type",
+                  "value": "permanent",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/contacts/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                ""
+              ]
+            },
+            "description": "Create a permanent contact. Contact ID is automatically saved to collection variable. Fields: name (required), phone, email, profile_photo (all optional)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Contact (Temporary)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Jane Doe",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+9876543210",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "jane@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "contact_type",
+                  "value": "temporary",
+                  "type": "text"
+                },
+                {
+                  "key": "delete_at_display",
+                  "value": "25/12/2026 02:30 PM",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/contacts/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                ""
+              ]
+            },
+            "description": "Create a temporary contact with auto-deletion. Use delete_at_display in format: dd/mm/yyyy hh:mm AM/PM (e.g., 25/12/2026 02:30 PM)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Contacts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contacts/?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "folder_id",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "contact_type",
+                  "value": "permanent",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "john",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all contacts with optional filters (folder_id, contact_type, search)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contacts Without Folder",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contacts/without-folder?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "without-folder"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get all contacts that are not in any folder."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contacts/{{contact_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contact_id}}"
+              ]
+            },
+            "description": "Get a specific contact by ID with all details (notes and reminders)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "John Smith Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "john.updated@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "profile_photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/contacts/{{contact_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contact_id}}"
+              ]
+            },
+            "description": "Update a contact's information. All fields are optional. Use delete_at_display for temporary contacts in format: dd/mm/yyyy hh:mm AM/PM."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contacts/{{contact_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "{{contact_id}}"
+              ]
+            },
+            "description": "Delete a contact. This will also delete all associated notes and reminders."
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup Expired Contacts",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contacts/cleanup-expired",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contacts",
+                "cleanup-expired"
+              ]
+            },
+            "description": "Delete all temporary contacts that have passed their deletion time."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Folders",
+      "item": [
+        {
+          "name": "Create Folder",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"folder_id\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Project Team\",\n    \"description\": \"Contacts related to current project\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/folders/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                ""
+              ]
+            },
+            "description": "Create a new folder to organize contacts. Folder ID is automatically saved."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Folders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/folders/?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get all folders for the current user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Folder by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/folders/{{folder_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                "{{folder_id}}"
+              ]
+            },
+            "description": "Get a specific folder by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Folder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Project Team Updated\",\n    \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/folders/{{folder_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                "{{folder_id}}"
+              ]
+            },
+            "description": "Update a folder's information."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Folder (Keep Contacts)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/folders/{{folder_id}}?remove_contacts=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                "{{folder_id}}"
+              ],
+              "query": [
+                {
+                  "key": "remove_contacts",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Delete folder but move contacts to no folder."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Folder (Delete Contacts)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/folders/{{folder_id}}?remove_contacts=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                "{{folder_id}}"
+              ],
+              "query": [
+                {
+                  "key": "remove_contacts",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Delete folder and all contacts in it."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Contact to Folder",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/folders/{{folder_id}}/contacts/{{contact_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                "{{folder_id}}",
+                "contacts",
+                "{{contact_id}}"
+              ]
+            },
+            "description": "Add an existing contact to a folder. This updates the contact's folder_id to move it into the specified folder."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Folder Contacts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/folders/{{folder_id}}/contacts?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                "{{folder_id}}",
+                "contacts"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get all contacts in a specific folder with pagination support."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Folder Contacts Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/folders/{{folder_id}}/contacts-count",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "folders",
+                "{{folder_id}}",
+                "contacts-count"
+              ]
+            },
+            "description": "Get the number of contacts in a folder."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notes",
+      "item": [
+        {
+          "name": "Create Note for Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"note_id\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"Met at Tech Conference 2026. Discussed potential collaboration.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notes/contacts/{{contact_id}}/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "contacts",
+                "{{contact_id}}",
+                "notes"
+              ]
+            },
+            "description": "Create a note for a specific contact. Note ID is automatically saved."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact Notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notes/contacts/{{contact_id}}/notes?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "contacts",
+                "{{contact_id}}",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get all notes for a specific contact."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Note by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notes/notes/{{note_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "notes",
+                "{{note_id}}"
+              ]
+            },
+            "description": "Get a specific note by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Note",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"Updated note content. Follow up scheduled.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notes/notes/{{note_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "notes",
+                "{{note_id}}"
+              ]
+            },
+            "description": "Update a note's content."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Note",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notes/notes/{{note_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "notes",
+                "{{note_id}}"
+              ]
+            },
+            "description": "Delete a note."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reminders",
+      "item": [
+        {
+          "name": "Create Reminder for Contact",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"reminder_id\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Follow up call\",\n    \"description\": \"Discuss project proposal and timeline\",\n    \"remind_at\": \"2026-01-14T14:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reminders/contacts/{{contact_id}}/reminders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "contacts",
+                "{{contact_id}}",
+                "reminders"
+              ]
+            },
+            "description": "Create a reminder for a specific contact (e.g., 'Follow up in 2 hours'). Reminder ID is automatically saved."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact Reminders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reminders/contacts/{{contact_id}}/reminders?skip=0&limit=100&include_completed=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "contacts",
+                "{{contact_id}}",
+                "reminders"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "include_completed",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Get all reminders for a specific contact."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Upcoming Reminders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reminders/upcoming?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "upcoming"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get all upcoming (not completed) reminders for the current user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Due Reminders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reminders/due",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "due"
+              ]
+            },
+            "description": "Get all reminders that are due (remind_at <= current time) and not completed."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reminder by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reminders/reminders/{{reminder_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "reminders",
+                "{{reminder_id}}"
+              ]
+            },
+            "description": "Get a specific reminder by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Reminder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Follow up call - Updated\",\n    \"description\": \"Updated description\",\n    \"remind_at\": \"2026-01-15T10:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reminders/reminders/{{reminder_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "reminders",
+                "{{reminder_id}}"
+              ]
+            },
+            "description": "Update a reminder's information."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Reminder",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reminders/reminders/{{reminder_id}}/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "reminders",
+                "{{reminder_id}}",
+                "complete"
+              ]
+            },
+            "description": "Mark a reminder as completed."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Reminder",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reminders/reminders/{{reminder_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reminders",
+                "reminders",
+                "{{reminder_id}}"
+              ]
+            },
+            "description": "Delete a reminder."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Device Tokens",
+      "item": [
+        {
+          "name": "Register Device Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"device_token\": \"your_fcm_device_token_here\",\n    \"device_type\": \"android\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/device-tokens/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "device-tokens",
+                ""
+              ]
+            },
+            "description": "Register or update FCM device token for push notifications. Device type can be 'android' or 'ios'."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Device Tokens",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/device-tokens/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "device-tokens",
+                "me"
+              ]
+            },
+            "description": "Get all device tokens registered for the current user."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Device Token",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/device-tokens/your_token_here",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "device-tokens",
+                "your_token_here"
+              ]
+            },
+            "description": "Delete a specific device token. Replace 'your_token_here' with the actual FCM token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Send Test Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"device_token\": \"your_fcm_device_token_here\",\n    \"title\": \"Test Notification\",\n    \"body\": \"This is a test notification from Relact!\",\n    \"data\": {\n        \"type\": \"test\",\n        \"timestamp\": \"2026-01-20T10:00:00Z\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/test",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "test"
+              ]
+            },
+            "description": "Send a test notification to a specific device token. Use this to verify FCM is working."
+          },
+          "response": []
+        },
+        {
+          "name": "Send Notification to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user_id\": 1,\n    \"title\": \"Reminder\",\n    \"body\": \"You have a meeting in 10 minutes\",\n    \"data\": {\n        \"type\": \"reminder\",\n        \"reminder_id\": \"123\",\n        \"contact_id\": \"456\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "send"
+              ]
+            },
+            "description": "Send notification to all devices of a specific user. Useful for reminders and contact alerts."
+          },
+          "response": []
+        },
+        {
+          "name": "Broadcast Notification to All Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"New Feature Available!\",\n    \"body\": \"Check out our latest update in the app\",\n    \"data\": {\n        \"type\": \"announcement\",\n        \"feature\": \"dark_mode\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/broadcast",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "broadcast"
+              ]
+            },
+            "description": "Send notification to all registered users. Use for announcements and system-wide alerts."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Utility",
+      "item": [
+        {
+          "name": "Root",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "API root endpoint with basic information."
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Health check endpoint."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contact_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "folder_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "note_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reminder_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

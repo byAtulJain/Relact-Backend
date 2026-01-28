@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relact Admin Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+
+<body class="bg-gray-100 font-sans" x-data="{ tab: 'notifications' }">
+
+    <!-- Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-900">
+                Relact Admin
+            </h1>
+            <div class="space-x-4">
+                <button @click="tab = 'notifications'"
+                    :class="{'bg-blue-600 text-white': tab === 'notifications', 'text-gray-600 hover:text-gray-900': tab !== 'notifications'}"
+                    class="px-4 py-2 rounded-md font-medium transition duration-150 ease-in-out">
+                    Notifications
+                </button>
+                <button @click="tab = 'content'"
+                    :class="{'bg-blue-600 text-white': tab === 'content', 'text-gray-600 hover:text-gray-900': tab !== 'content'}"
+                    class="px-4 py-2 rounded-md font-medium transition duration-150 ease-in-out">
+                    App Content
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+
+        <!-- Notifications Tab -->
+        <div x-show="tab === 'notifications'" class="space-y-6">
+            <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">Push Notifications</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Send alerts to your users. Use 'Broadcast' to reach everyone.
+                        </p>
+                    </div>
+                    <div class="mt-5 md:mt-0 md:col-span-2">
+                        <form action="/admin/notifications" method="POST" target="dummyframe" id="notifForm" x-data="{ 
+                                  type: 'broadcast',
+                                  title: '',
+                                  body: '',
+                                  updateFields() {
+                                      if (this.type === 'update') {
+                                          this.title = 'New Update Available';
+                                          this.body = 'A new version of Relact is available. Please update for the latest features.';
+                                      } else {
+                                          this.title = '';
+                                          this.body = '';
+                                      }
+                                  }
+                              }">
+                            <div class="grid grid-cols-6 gap-6">
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
+                                    <select id="type" name="type" x-model="type" @change="updateFields()"
+                                        class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                        <option value="broadcast">Broadcast (All Users)</option>
+                                        <option value="specific">Specific User</option>
+                                        <option value="update">App Update Alert</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-span-6 sm:col-span-3" x-show="type === 'specific'"
+                                    style="display: none;" x-data='{ 
+                                         search: "", 
+                                         open: false, 
+                                         selectedUser: null,
+                                         users: {{ users|tojson }},
+                                         get filteredUsers() {
+                                             if (this.search === "") {
+                                                 return this.users;
+                                             }
+                                             return this.users.filter(user => {
+                                                 return user.username.toLowerCase().includes(this.search.toLowerCase()) || 
+                                                        user.email.toLowerCase().includes(this.search.toLowerCase());
+                                             });
+                                         }
+                                     }'>
+                                    <label class="block text-sm font-medium text-gray-700">Select User</label>
+                                    <input type="hidden" name="user_id" :value="selectedUser ? selectedUser.id : ''">
+
+                                    <div class="relative mt-1">
+                                        <input type="text" x-model="search" @focus="open = true"
+                                            @click.away="open = false"
+                                            :placeholder="selectedUser ? selectedUser.username + ' (' + selectedUser.email + ')' : 'Search by name or email...'"
+                                            class="w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
+
+                                        <ul x-show="open"
+                                            class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
+                                            style="display: none;">
+                                            <template x-for="user in filteredUsers" :key="user.id">
+                                                <li @click="selectedUser = user; search = ''; open = false"
+                                                    class="text-gray-900 relative cursor-default select-none py-2 pl-3 pr-9 hover:bg-blue-600 hover:text-white">
+                                                    <span class="block truncate"
+                                                        x-text="user.username + ' (' + user.email + ')'"></span>
+                                                </li>
+                                            </template>
+                                            <li x-show="filteredUsers.length === 0"
+                                                class="text-gray-500 cursor-default select-none py-2 pl-3 pr-9">
+                                                No users found
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+                                    <input type="text" name="title" id="title" x-model="title" required
+                                        class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+
+                                <div class="col-span-6">
+                                    <label for="body" class="block text-sm font-medium text-gray-700">Body</label>
+                                    <textarea name="body" id="body" rows="3" x-model="body" required
+                                        class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"></textarea>
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" onclick="alert('Sending... check console/logs for result.')"
+                                    class="bg-blue-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Send Notification
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Tab -->
+        <div x-show="tab === 'content'" class="space-y-6" style="display: none;">
+            <!-- Privacy Policy -->
+            <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6 mb-6">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">Privacy Policy</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Update the privacy policy text displayed in the app. Use **markdown** format.
+                        </p>
+                    </div>
+                    <div class="mt-5 md:mt-0 md:col-span-2">
+                        <form action="/admin/content" method="POST" target="dummyframe">
+                            <input type="hidden" name="key" value="privacy">
+                            <input type="hidden" name="title" value="Privacy Policy">
+                            <div>
+                                <label for="privacy_content"
+                                    class="block text-sm font-medium text-gray-700">Content</label>
+                                <textarea id="privacy_content" name="content" rows="12"
+                                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md font-mono">{{ privacy_content }}</textarea>
+                            </div>
+                            <div class="mt-4 flex justify-end">
+                                <button type="submit" onclick="alert('Updating Privacy Policy...')"
+                                    class="bg-green-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                    Save Privacy Policy
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Us -->
+            <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">About App</h3>
+                        <p class="mt-1 text-sm text-gray-500">
+                            Update the 'About' section info.
+                        </p>
+                    </div>
+                    <div class="mt-5 md:mt-0 md:col-span-2">
+                        <form action="/admin/content" method="POST" target="dummyframe">
+                            <input type="hidden" name="key" value="about">
+                            <input type="hidden" name="title" value="About Relact">
+                            <div>
+                                <label for="about_content"
+                                    class="block text-sm font-medium text-gray-700">Content</label>
+                                <textarea id="about_content" name="content" rows="12"
+                                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md font-mono">{{ about_content }}</textarea>
+                            </div>
+                            <div class="mt-4 flex justify-end">
+                                <button type="submit" onclick="alert('Updating About Us...')"
+                                    class="bg-green-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                    Save About Info
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Invisible iframe for form submissions to prevent page reload/redirect -->
+    <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+
+</body>
+
+</html>
