@@ -1,7 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, computed_field
 from typing import Optional, List, Generic, TypeVar, Any
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from app.models import ContactType
+
+# IST timezone offset (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 # Generic Response Wrappers
@@ -252,6 +255,34 @@ class ReminderResponse(ReminderBase):
     updated_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
+
+    @computed_field
+    @property
+    def remind_at_ist(self) -> str:
+        """Return remind_at in IST format"""
+        if self.remind_at:
+            # Convert to IST
+            if self.remind_at.tzinfo is None:
+                # Assume UTC if no timezone
+                utc_time = self.remind_at.replace(tzinfo=timezone.utc)
+            else:
+                utc_time = self.remind_at
+            ist_time = utc_time.astimezone(IST)
+            return ist_time.strftime("%d/%m/%Y %I:%M %p IST")
+        return None
+
+    @computed_field
+    @property
+    def created_at_ist(self) -> str:
+        """Return created_at in IST format"""
+        if self.created_at:
+            if self.created_at.tzinfo is None:
+                utc_time = self.created_at.replace(tzinfo=timezone.utc)
+            else:
+                utc_time = self.created_at
+            ist_time = utc_time.astimezone(IST)
+            return ist_time.strftime("%d/%m/%Y %I:%M %p IST")
+        return None
 
 
 # Contact Schemas

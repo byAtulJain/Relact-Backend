@@ -1,5 +1,5 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import Contact, ContactType, DeviceToken, Reminder
@@ -7,6 +7,9 @@ from app.services.firebase_admin import firebase_service
 import logging
 
 logger = logging.getLogger(__name__)
+
+# IST timezone offset (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 class ContactScheduler:
@@ -68,8 +71,6 @@ class ContactScheduler:
         """Check for contacts expiring in 1 minute and send warning notifications"""
         db: Session = SessionLocal()
         try:
-            # Use timezone-aware datetime (UTC)
-            from datetime import timezone
             now = datetime.now(timezone.utc)
             
             # Get contacts expiring in the next 1-2 minutes
@@ -77,19 +78,45 @@ class ContactScheduler:
             warning_time_end = now + timedelta(minutes=2)
             
             logger.info(f"Checking for expiring contacts. Current time (UTC): {now}")
+            logger.info(f"Current time (IST): {now.astimezone(IST)}")
+            logger.info(f"Warning window: {warning_time_start} to {warning_time_end}")
             
-            expiring_contacts = db.query(Contact).filter(
+            # Get all temporary contacts with delete_at set
+            all_temp_contacts = db.query(Contact).filter(
                 Contact.contact_type == ContactType.TEMPORARY,
-                Contact.delete_at.isnot(None),
-                Contact.delete_at >= warning_time_start,
-                Contact.delete_at < warning_time_end
+                Contact.delete_at.isnot(None)
             ).all()
+            
+            if all_temp_contacts:
+                logger.info(f"Total temporary contacts with delete_at: {len(all_temp_contacts)}")
+                for c in all_temp_contacts:
+                    delete_at = c.delete_at
+                    # Make timezone-aware if naive
+                    if delete_at.tzinfo is None:
+                        delete_at_utc = delete_at.replace(tzinfo=timezone.utc)
+                    else:
+                        delete_at_utc = delete_at.astimezone(timezone.utc)
+                    
+                    logger.info(f"  - Contact '{c.name}': delete_at={delete_at}, delete_at_utc={delete_at_utc}")
+            
+            # Filter manually to handle timezone-naive datetimes
+            expiring_contacts = []
+            for contact in all_temp_contacts:
+                delete_at = contact.delete_at
+                # Make timezone-aware if naive (assume UTC)
+                if delete_at.tzinfo is None:
+                    delete_at = delete_at.replace(tzinfo=timezone.utc)
+                else:
+                    delete_at = delete_at.astimezone(timezone.utc)
+                
+                if warning_time_start <= delete_at < warning_time_end:
+                    expiring_contacts.append((contact, delete_at))
 
             if expiring_contacts:
                 logger.info(f"Found {len(expiring_contacts)} contacts expiring soon")
 
-            for contact in expiring_contacts:
-                logger.info(f"Contact '{contact.name}' expires at: {contact.delete_at}")
+            for contact, delete_at_utc in expiring_contacts:
+                logger.info(f"Contact '{contact.name}' expires at: {delete_at_utc}")
                 
                 # Get user's device tokens
                 device_tokens = db.query(DeviceToken).filter(
@@ -100,7 +127,7 @@ class ContactScheduler:
                     tokens = [dt.device_token for dt in device_tokens]
                     
                     # Calculate time until deletion
-                    time_left = contact.delete_at - now
+                    time_left = delete_at_utc - now
                     minutes_left = int(time_left.total_seconds() / 60)
                     
                     # Send warning notification
@@ -112,7 +139,7 @@ class ContactScheduler:
                             "type": "contact_expiring_warning",
                             "contact_id": str(contact.id),
                             "contact_name": contact.name,
-                            "delete_at": contact.delete_at.isoformat(),
+                            "delete_at": delete_at_utc.isoformat(),
                             "minutes_left": str(minutes_left)
                         }
                     )
@@ -132,18 +159,29 @@ class ContactScheduler:
         """Delete contacts that have passed their deletion time"""
         db: Session = SessionLocal()
         try:
-            # Use timezone-aware datetime (UTC)
-            from datetime import timezone
             now = datetime.now(timezone.utc)
             
             logger.info(f"Checking for expired contacts. Current time (UTC): {now}")
+            logger.info(f"Current time (IST): {now.astimezone(IST)}")
             
-            # Get contacts that should be deleted
-            expired_contacts = db.query(Contact).filter(
+            # Get all temporary contacts with delete_at set
+            all_temp_contacts = db.query(Contact).filter(
                 Contact.contact_type == ContactType.TEMPORARY,
-                Contact.delete_at.isnot(None),
-                Contact.delete_at <= now
+                Contact.delete_at.isnot(None)
             ).all()
+            
+            # Filter manually to handle timezone-naive datetimes
+            expired_contacts = []
+            for contact in all_temp_contacts:
+                delete_at = contact.delete_at
+                # Make timezone-aware if naive (assume UTC)
+                if delete_at.tzinfo is None:
+                    delete_at = delete_at.replace(tzinfo=timezone.utc)
+                else:
+                    delete_at = delete_at.astimezone(timezone.utc)
+                
+                if delete_at <= now:
+                    expired_contacts.append(contact)
 
             if expired_contacts:
                 logger.info(f"Found {len(expired_contacts)} expired contacts to delete")
@@ -194,23 +232,54 @@ class ContactScheduler:
         """Check for reminders that are due and send notifications"""
         db: Session = SessionLocal()
         try:
-            from datetime import timezone
             now = datetime.now(timezone.utc)
             
             logger.info(f"Checking for due reminders. Current time (UTC): {now}")
+            logger.info(f"Current time (IST): {now.astimezone(IST)}")
+            
+            # Get ALL pending reminders for debugging
+            all_pending = db.query(Reminder).filter(
+                Reminder.notification_sent == False,
+                Reminder.is_completed == False
+            ).all()
+            
+            if all_pending:
+                logger.info(f"Total pending reminders: {len(all_pending)}")
+                for r in all_pending:
+                    remind_at = r.remind_at
+                    # Make timezone-aware if naive
+                    if remind_at.tzinfo is None:
+                        remind_at_utc = remind_at.replace(tzinfo=timezone.utc)
+                    else:
+                        remind_at_utc = remind_at.astimezone(timezone.utc)
+                    
+                    is_due = remind_at_utc <= now
+                    logger.info(f"  - Reminder '{r.title}' (ID: {r.id}): remind_at={remind_at}, remind_at_utc={remind_at_utc}, is_due={is_due}")
             
             # Get due reminders that have not been notified
             # We join with Contact to ensure we can get the user owner
             due_reminders = db.query(Reminder).join(Contact).filter(
                 Reminder.notification_sent == False,
-                Reminder.is_completed == False,
-                Reminder.remind_at <= now
+                Reminder.is_completed == False
             ).all()
-
-            if due_reminders:
-                logger.info(f"Found {len(due_reminders)} due reminders")
-
+            
+            # Filter manually to handle timezone-naive datetimes
+            actual_due_reminders = []
             for reminder in due_reminders:
+                remind_at = reminder.remind_at
+                # Make timezone-aware if naive (assume UTC)
+                if remind_at.tzinfo is None:
+                    remind_at = remind_at.replace(tzinfo=timezone.utc)
+                else:
+                    remind_at = remind_at.astimezone(timezone.utc)
+                
+                if remind_at <= now:
+                    actual_due_reminders.append(reminder)
+
+            if actual_due_reminders:
+                logger.info(f"Found {len(actual_due_reminders)} due reminders to process")
+
+            for reminder in actual_due_reminders:
                 contact = reminder.contact
                 if not contact:
                     logger.warning(f"Reminder {reminder.id} has no associated contact")
