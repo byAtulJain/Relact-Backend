@@ -17,7 +17,7 @@ def get_all_reminders(
     include_completed: bool = Query(False, description="Include completed reminders"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> ListResponse[ReminderResponse]:
     """
     Get all reminders for the current user across all contacts.
     """
@@ -41,7 +41,7 @@ def create_reminder(
     reminder: ReminderCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> SuccessResponse[ReminderResponse]:
     """
     Create a reminder for a specific contact.
     Example: "Follow up in 2 hours" - set remind_at to current time + 2 hours.
@@ -77,7 +77,7 @@ def get_contact_reminders(
     include_completed: bool = Query(False, description="Include completed reminders"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> ListResponse[ReminderResponse]:
     """
     Get all reminders for a specific contact.
     """
@@ -111,7 +111,7 @@ def get_upcoming_reminders(
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> ListResponse[ReminderResponse]:
     """
     Get all upcoming (not completed) reminders for the current user.
     Sorted by reminder time.
@@ -130,7 +130,7 @@ def get_upcoming_reminders(
 def get_due_reminders(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> ListResponse[ReminderResponse]:
     """
     Get all reminders that are due (remind_at <= current time) and not completed.
     """
@@ -152,7 +152,7 @@ def get_reminder(
     reminder_id: int,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> SuccessResponse[ReminderResponse]:
     """
     Get a specific reminder by ID.
     """
@@ -176,7 +176,7 @@ def update_reminder(
     reminder_update: ReminderUpdate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> SuccessResponse[ReminderResponse]:
     """
     Update a reminder's information.
     """
@@ -213,7 +213,7 @@ def complete_reminder(
     reminder_id: int,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-):
+) -> SuccessResponse[ReminderResponse]:
     """
     Mark a reminder as completed.
     """

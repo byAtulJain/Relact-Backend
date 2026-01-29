@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, computed_field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, computed_field, field_serializer
 from typing import Optional, List, Generic, TypeVar, Any
 from datetime import datetime, timezone, timedelta
 from app.models import ContactType
@@ -255,6 +255,13 @@ class ReminderResponse(ReminderBase):
     updated_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer('remind_at')
+    def serialize_remind_at(self, dt: datetime, _info):
+        """Serialize remind_at to IST ISO format"""
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(IST).isoformat()
 
     @computed_field
     @property
