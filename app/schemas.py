@@ -363,6 +363,15 @@ class ContactResponse(ContactBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_serializer('delete_at')
+    def serialize_delete_at(self, dt: Optional[datetime], _info):
+        """Serialize delete_at to IST ISO format"""
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(IST).isoformat()
+
 
 class ContactListResponse(BaseModel):
     id: int

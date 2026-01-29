@@ -73,11 +73,22 @@ async def create_contact(
         profile_photo_path = '/' + str(file_path).replace('\\', '/')
     
     # Parse delete_at_display if provided
+    # Parse delete_at_display if provided
     delete_at = None
     if delete_at_display:
         try:
-            from datetime import datetime as dt
-            delete_at = dt.strptime(delete_at_display, "%d/%m/%Y %I:%M %p")
+            from datetime import datetime as dt, timedelta, timezone
+            IST = timezone(timedelta(hours=5, minutes=30))
+            
+            # Parse as naive (which implies IST in user's mind)
+            naive_dt = dt.strptime(delete_at_display, "%d/%m/%Y %I:%M %p")
+            
+            # Set to IST
+            ist_dt = naive_dt.replace(tzinfo=IST)
+            
+            # Convert to UTC for storage
+            delete_at = ist_dt.astimezone(timezone.utc)
+            
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -426,10 +437,21 @@ async def update_contact(
         contact.profile_photo = '/' + str(file_path).replace('\\', '/')
     
     # Parse delete_at_display if provided
+    # Parse delete_at_display if provided
     if delete_at_display:
         try:
-            from datetime import datetime as dt
-            contact.delete_at = dt.strptime(delete_at_display, "%d/%m/%Y %I:%M %p")
+            from datetime import datetime as dt, timedelta, timezone
+            IST = timezone(timedelta(hours=5, minutes=30))
+            
+            # Parse as naive
+            naive_dt = dt.strptime(delete_at_display, "%d/%m/%Y %I:%M %p")
+            
+            # Set to IST
+            ist_dt = naive_dt.replace(tzinfo=IST)
+            
+            # Convert to UTC for storage
+            contact.delete_at = ist_dt.astimezone(timezone.utc)
+            
         except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
