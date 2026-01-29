@@ -63,6 +63,7 @@ async def send_notification(
     title: str = Form(...),
     body: str = Form(...),
     user_id: int = Form(None),
+    link: str = Form(None),
     db: Session = Depends(get_db)
 ):
     try:
@@ -103,12 +104,16 @@ async def send_notification(
              tokens = db.query(DeviceToken.device_token).all()
              token_list = [t[0] for t in tokens]
              
+             data_payload = {"type": "update"}
+             if link:
+                 data_payload["link"] = link
+             
              for i in range(0, len(token_list), 500):
                  firebase_service.send_multicast(
                     tokens=token_list[i:i + 500],
                     title=title,
                     body=body,
-                    data={"type": "update"}
+                    data=data_payload
                 )
              return {"message": "Update alert sent"}
             
