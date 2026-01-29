@@ -21,6 +21,7 @@ class SendNotificationRequest(BaseModel):
 class BroadcastNotificationRequest(BaseModel):
     title: str
     body: str
+    link: Optional[str] = None
     data: Optional[Dict[str, str]] = None
 
 
@@ -104,11 +105,17 @@ def broadcast_notification(
 
     for i in range(0, len(tokens), batch_size):
         batch = tokens[i:i + batch_size]
+        
+        # Add link to data if provided
+        msg_data = notification.data or {}
+        if notification.link:
+            msg_data["link"] = notification.link
+
         result = firebase_service.send_multicast(
             tokens=batch,
             title=notification.title,
             body=notification.body,
-            data=notification.data
+            data=msg_data
         )
         total_success += result.get("success_count", 0)
         total_failure += result.get("failure_count", 0)

@@ -119,6 +119,14 @@
                                         class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                                 </div>
 
+                                <div class="col-span-6" x-show="type === 'update'" style="display: none;">
+                                    <label for="link" class="block text-sm font-medium text-gray-700">Update Link
+                                        (Playstore/URL)</label>
+                                    <input type="url" name="link" id="link"
+                                        placeholder="https://play.google.com/store/apps/details?id=..."
+                                        class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+
                                 <div class="col-span-6">
                                     <label for="body" class="block text-sm font-medium text-gray-700">Body</label>
                                     <textarea name="body" id="body" rows="3" x-model="body" required
