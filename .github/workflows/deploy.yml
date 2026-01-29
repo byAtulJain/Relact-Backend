@@ -61,6 +61,9 @@ jobs:
           
           cd ~/relact-backend
           
+          # Pull latest code configuration (docker-compose.yml, etc.)
+          git pull origin main
+          
           # Pull the latest image
           docker compose pull
           
