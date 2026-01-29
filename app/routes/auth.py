@@ -373,7 +373,7 @@ async def forgot_password(
         db.commit()
         
         # Send OTP email
-        email_sent = await send_otp_email(request.email, otp)
+        email_sent = await send_otp_email(request.email, otp, is_reset=True)
         
         if not email_sent:
             raise HTTPException(

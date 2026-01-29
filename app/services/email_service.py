@@ -11,23 +11,34 @@ def generate_otp() -> str:
     return str(random.randint(100000, 999999))
 
 
-async def send_otp_email(email: str, otp: str) -> bool:
+async def send_otp_email(email: str, otp: str, is_reset: bool = False) -> bool:
     """
     Send OTP verification email via Gmail SMTP
     
     Args:
         email: Recipient email address
         otp: 6-digit OTP code
+        is_reset: Whether this is for password reset (True) or registration (False)
         
     Returns:
         bool: True if email sent successfully, False otherwise
     """
     settings = get_settings()
     
+    # Customize content based on type
+    if is_reset:
+        subject = "Password Reset Code - Relact"
+        title = "Password Reset"
+        message_text = "You requested a password reset. Use the code below to reset your password:"
+    else:
+        subject = "Email Verification Code - Relact"
+        title = "Email Verification"
+        message_text = "Thank you for registering with Relact! Please use the following verification code to complete your registration:"
+
     try:
         # Create message
         message = MIMEMultipart("alternative")
-        message["Subject"] = "Email Verification Code - Relact"
+        message["Subject"] = subject
         message["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
         message["To"] = email
         
@@ -52,8 +63,8 @@ async def send_otp_email(email: str, otp: str) -> bool:
                     <p>Smart Contact Manager</p>
                 </div>
                 <div class="content">
-                    <h2>Email Verification</h2>
-                    <p>Thank you for registering with Relact! Please use the following verification code to complete your registration:</p>
+                    <h2>{title}</h2>
+                    <p>{message_text}</p>
                     <div class="otp-code">{otp}</div>
                     <p><strong>This code will expire in 5 minutes.</strong></p>
                     <p>If you didn't request this code, please ignore this email.</p>
@@ -68,11 +79,11 @@ async def send_otp_email(email: str, otp: str) -> bool:
         
         # Plain text fallback
         text_body = f"""
-        Relact - Email Verification
+        Relact - {title}
         
-        Thank you for registering with Relact!
+        {message_text}
         
-        Your verification code is: {otp}
+        Your code is: {otp}
         
         This code will expire in 5 minutes.
         
