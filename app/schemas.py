@@ -235,6 +235,20 @@ class ReminderBase(BaseModel):
     description: Optional[str] = None
     remind_at: datetime
 
+    @field_validator('remind_at')
+    @classmethod
+    def validate_remind_at(cls, v: datetime) -> datetime:
+        """
+        Treat incoming naive datetimes as IST and convert to UTC for storage.
+        If the datetime is already aware, ensure it's converted to UTC.
+        """
+        if v.tzinfo is None:
+            # If naive, assume it's IST
+            v = v.replace(tzinfo=IST)
+        
+        # Convert to UTC for consistent storage
+        return v.astimezone(timezone.utc)
+
 
 class ReminderCreate(ReminderBase):
     pass
@@ -245,6 +259,23 @@ class ReminderUpdate(BaseModel):
     description: Optional[str] = None
     remind_at: Optional[datetime] = None
     is_completed: Optional[bool] = None
+
+    @field_validator('remind_at')
+    @classmethod
+    def validate_remind_at(cls, v: Optional[datetime]) -> Optional[datetime]:
+        """
+        Treat incoming naive datetimes as IST and convert to UTC for storage.
+        If the datetime is already aware, ensure it's converted to UTC.
+        """
+        if v is None:
+            return None
+            
+        if v.tzinfo is None:
+            # If naive, assume it's IST
+            v = v.replace(tzinfo=IST)
+        
+        # Convert to UTC for consistent storage
+        return v.astimezone(timezone.utc)
 
 
 class ReminderResponse(ReminderBase):
