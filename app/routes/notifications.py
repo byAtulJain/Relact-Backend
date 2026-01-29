@@ -15,14 +15,12 @@ class SendNotificationRequest(BaseModel):
     user_id: int
     title: str
     body: str
-    link: Optional[str] = None
     data: Optional[Dict[str, str]] = None
 
 
 class BroadcastNotificationRequest(BaseModel):
     title: str
     body: str
-    link: Optional[str] = None
     data: Optional[Dict[str, str]] = None
 
 
@@ -57,17 +55,12 @@ def send_notification_to_user(
     # Extract token strings
     tokens = [dt.device_token for dt in device_tokens]
 
-    # Prepare data payload
-    data_payload = notification.data or {}
-    if notification.link:
-        data_payload["link"] = notification.link
-
     # Send multicast notification
     result = firebase_service.send_multicast(
         tokens=tokens,
         title=notification.title,
         body=notification.body,
-        data=data_payload
+        data=notification.data
     )
 
     return {
@@ -109,18 +102,13 @@ def broadcast_notification(
     total_success = 0
     total_failure = 0
 
-    # Prepare data payload
-    data_payload = notification.data or {}
-    if notification.link:
-        data_payload["link"] = notification.link
-
     for i in range(0, len(tokens), batch_size):
         batch = tokens[i:i + batch_size]
         result = firebase_service.send_multicast(
             tokens=batch,
             title=notification.title,
             body=notification.body,
-            data=data_payload
+            data=notification.data
         )
         total_success += result.get("success_count", 0)
         total_failure += result.get("failure_count", 0)
