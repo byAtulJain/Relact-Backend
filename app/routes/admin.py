@@ -62,10 +62,16 @@ async def send_notification(
     type: str = Form(...),
     title: str = Form(...),
     body: str = Form(...),
+    link: str = Form(None),
     user_id: int = Form(None),
     db: Session = Depends(get_db)
 ):
     try:
+        # Prepare data with optional link
+        data_payload = {}
+        if link:
+            data_payload["link"] = link
+            
         if type == "broadcast":
             # Broadcast to all users
             tokens = db.query(DeviceToken.device_token).all()
@@ -77,7 +83,8 @@ async def send_notification(
                  firebase_service.send_multicast(
                     tokens=token_list[i:i + batch_size],
                     title=title,
-                    body=body
+                    body=body,
+                    data=data_payload
                 )
             return {"message": f"Broadcast sent to {len(token_list)} devices"}
             
@@ -93,24 +100,27 @@ async def send_notification(
             firebase_service.send_multicast(
                 tokens=token_list,
                 title=title,
-                body=body
+                body=body,
+                data=data_payload
             )
             return {"message": f"Sent to user {user_id}"}
             
         elif type == "update":
-            # Just like broadcast but maybe different title/body logic intended?
-            # For now treat as broadcast with the provided title/body
-             tokens = db.query(DeviceToken.device_token).all()
-             token_list = [t[0] for t in tokens]
+            # Update specific logic
+            tokens = db.query(DeviceToken.device_token).all()
+            token_list = [t[0] for t in tokens]
+            
+            # Add update type to data
+            data_payload["type"] = "update"
              
-             for i in range(0, len(token_list), 500):
+            for i in range(0, len(token_list), 500):
                  firebase_service.send_multicast(
                     tokens=token_list[i:i + 500],
                     title=title,
                     body=body,
-                    data={"type": "update"}
+                    data=data_payload
                 )
-             return {"message": "Update alert sent"}
+            return {"message": "Update alert sent"}
             
     except Exception as e:
         return {"error": str(e)}
