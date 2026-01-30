@@ -68,85 +68,56 @@ class ContactScheduler:
             logger.info("🛑 Contact scheduler stopped")
 
     def check_expiring_contacts(self):
-        """Check for contacts expiring in 1 minute and send warning notifications"""
+        """Check for contacts expiring at specific intervals (24h, 1h, 10m) and send warnings"""
         db: Session = SessionLocal()
         try:
             now = datetime.now(timezone.utc)
-            
-            # Get contacts expiring in the next 1-2 minutes
-            warning_time_start = now + timedelta(minutes=1)
-            warning_time_end = now + timedelta(minutes=2)
-            
             logger.info(f"Checking for expiring contacts. Current time (UTC): {now}")
-            logger.info(f"Current time (IST): {now.astimezone(IST)}")
-            logger.info(f"Warning window: {warning_time_start} to {warning_time_end}")
+            
+            # Define warning intervals in minutes: (minutes_before, label)
+            intervals = [
+                (1440, "1 day"),      # 24 hours
+                (60, "1 hour"),       # 1 hour
+                (10, "10 minutes")    # 10 minutes
+            ]
             
             # Get all temporary contacts with delete_at set
+            # We fetch all because we need to handle timezone conversions in python
             all_temp_contacts = db.query(Contact).filter(
                 Contact.contact_type == ContactType.TEMPORARY,
                 Contact.delete_at.isnot(None)
             ).all()
             
-            if all_temp_contacts:
-                logger.info(f"Total temporary contacts with delete_at: {len(all_temp_contacts)}")
-                for c in all_temp_contacts:
-                    delete_at = c.delete_at
-                    # Make timezone-aware if naive
+            if not all_temp_contacts:
+                return
+
+            for minutes_before, label in intervals:
+                # Calculate the 1-minute window centered around the target time
+                # We check [target - 30s, target + 30s] to ensure contiguous coverage
+                target_time = now + timedelta(minutes=minutes_before)
+                target_time_start = target_time - timedelta(seconds=30)
+                target_time_end = target_time + timedelta(seconds=30)
+                
+                logger.info(f"Checking interval '{label}': {minutes_before}m. Window: {target_time_start} to {target_time_end}")
+
+                # Filter contacts falling in this window
+                matching_contacts = []
+                for contact in all_temp_contacts:
+                    delete_at = contact.delete_at
+                    # Make timezone-aware if naive (assume UTC)
                     if delete_at.tzinfo is None:
-                        delete_at_utc = delete_at.replace(tzinfo=timezone.utc)
+                        delete_at = delete_at.replace(tzinfo=timezone.utc)
                     else:
-                        delete_at_utc = delete_at.astimezone(timezone.utc)
+                        delete_at = delete_at.astimezone(timezone.utc)
                     
-                    logger.info(f"  - Contact '{c.name}': delete_at={delete_at}, delete_at_utc={delete_at_utc}")
-            
-            # Filter manually to handle timezone-naive datetimes
-            expiring_contacts = []
-            for contact in all_temp_contacts:
-                delete_at = contact.delete_at
-                # Make timezone-aware if naive (assume UTC)
-                if delete_at.tzinfo is None:
-                    delete_at = delete_at.replace(tzinfo=timezone.utc)
-                else:
-                    delete_at = delete_at.astimezone(timezone.utc)
+                    if target_time_start <= delete_at < target_time_end:
+                        matching_contacts.append((contact, delete_at))
                 
-                if warning_time_start <= delete_at < warning_time_end:
-                    expiring_contacts.append((contact, delete_at))
-
-            if expiring_contacts:
-                logger.info(f"Found {len(expiring_contacts)} contacts expiring soon")
-
-            for contact, delete_at_utc in expiring_contacts:
-                logger.info(f"Contact '{contact.name}' expires at: {delete_at_utc}")
-                
-                # Get user's device tokens
-                device_tokens = db.query(DeviceToken).filter(
-                    DeviceToken.user_id == contact.user_id
-                ).all()
-
-                if device_tokens:
-                    tokens = [dt.device_token for dt in device_tokens]
+                if matching_contacts:
+                    logger.info(f"Found {len(matching_contacts)} contacts expiring in {label}")
                     
-                    # Calculate time until deletion
-                    time_left = delete_at_utc - now
-                    minutes_left = int(time_left.total_seconds() / 60)
-                    
-                    # Send warning notification
-                    result = firebase_service.send_multicast(
-                        tokens=tokens,
-                        title=f"Contact Expiring Soon",
-                        body=f"{contact.name} will be deleted in {minutes_left} minute(s)",
-                        data={
-                            "type": "contact_expiring_warning",
-                            "contact_id": str(contact.id),
-                            "contact_name": contact.name,
-                            "delete_at": delete_at_utc.isoformat(),
-                            "minutes_left": str(minutes_left)
-                        }
-                    )
-                    
-                    logger.info(f"Sent expiration warning for '{contact.name}' - Success: {result['success_count']}, Failed: {result['failure_count']}")
-                else:
-                    logger.warning(f"No device tokens found for user {contact.user_id}")
+                    for contact, delete_at_utc in matching_contacts:
+                        self._send_expiration_warning(db, contact, delete_at_utc, label, minutes_before)
 
         except Exception as e:
             logger.error(f"Error checking expiring contacts: {e}")
@@ -154,6 +125,37 @@ class ContactScheduler:
             logger.error(traceback.format_exc())
         finally:
             db.close()
+
+    def _send_expiration_warning(self, db: Session, contact: Contact, delete_at_utc: datetime, time_label: str, minutes_left: int):
+        """Helper to send expiration warning"""
+        try:
+            # Get user's device tokens
+            device_tokens = db.query(DeviceToken).filter(
+                DeviceToken.user_id == contact.user_id
+            ).all()
+
+            if device_tokens:
+                tokens = [dt.device_token for dt in device_tokens]
+                
+                # Send warning notification
+                result = firebase_service.send_multicast(
+                    tokens=tokens,
+                    title=f"Contact Expiring Soon",
+                    body=f"{contact.name} will be deleted in {time_label}",
+                    data={
+                        "type": "contact_expiring_warning",
+                        "contact_id": str(contact.id),
+                        "contact_name": contact.name,
+                        "delete_at": delete_at_utc.isoformat(),
+                        "minutes_left": str(minutes_left)
+                    }
+                )
+                
+                logger.info(f"Sent {time_label} warning for '{contact.name}' - Success: {result['success_count']}")
+            else:
+                logger.warning(f"No device tokens found for user {contact.user_id}")
+        except Exception as e:
+            logger.error(f"Error sending warning for contact {contact.id}: {e}")
 
     def delete_expired_contacts(self):
         """Delete contacts that have passed their deletion time"""
