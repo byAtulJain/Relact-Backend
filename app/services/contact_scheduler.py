@@ -148,7 +148,8 @@ class ContactScheduler:
                         "contact_name": contact.name,
                         "delete_at": delete_at_utc.isoformat(),
                         "minutes_left": str(minutes_left)
-                    }
+                    },
+                    channel_id='relact_deletion'
                 )
                 
                 logger.info(f"Sent {time_label} warning for '{contact.name}' - Success: {result['success_count']}")
@@ -217,7 +218,8 @@ class ContactScheduler:
                             "type": "contact_deleted",
                             "contact_id": str(contact_id),
                             "contact_name": contact_name
-                        }
+                        },
+                        channel_id='relact_deletion'
                     )
                     
                     logger.info(f"Sent deletion notification for '{contact_name}' - Success: {result['success_count']}")
@@ -308,7 +310,8 @@ class ContactScheduler:
                             "reminder_id": str(reminder.id),
                             "contact_id": str(contact.id),
                             "contact_name": contact.name
-                        }
+                        },
+                        channel_id='relact_reminders'
                     )
                     
                     logger.info(f"Sent reminder notification - Success: {result['success_count']}")

@@ -52,7 +52,8 @@ class FirebaseAdminService:
         token: str,
         title: str,
         body: str,
-        data: Dict[str, str] = None
+        data: Dict[str, str] = None,
+        channel_id: str = 'relact_default'
     ) -> bool:
         """
         Send notification to a single device
@@ -62,24 +63,29 @@ class FirebaseAdminService:
             title: Notification title
             body: Notification body
             data: Additional data payload
+            channel_id: Android Notification Channel ID
             
         Returns:
             bool: True if sent successfully, False otherwise
         """
         try:
+            # Ensure data contains channel_id for local handling
+            msg_data = data or {}
+            msg_data['channel_id'] = channel_id
+            
             message = messaging.Message(
                 notification=messaging.Notification(
                     title=title,
                     body=body,
                 ),
-                data=data or {},
+                data=msg_data,
                 token=token,
                 android=messaging.AndroidConfig(
                     priority='high',
                     notification=messaging.AndroidNotification(
                         sound='default',
                         priority='high',
-                        channel_id='relact_notifications',
+                        channel_id=channel_id,
                     ),
                 ),
                 apns=messaging.APNSConfig(
@@ -103,7 +109,8 @@ class FirebaseAdminService:
         tokens: List[str],
         title: str,
         body: str,
-        data: Dict[str, str] = None
+        data: Dict[str, str] = None,
+        channel_id: str = 'relact_default'
     ) -> Dict[str, Any]:
         """
         Send notification to multiple devices
@@ -113,6 +120,7 @@ class FirebaseAdminService:
             title: Notification title
             body: Notification body
             data: Additional data payload
+            channel_id: Android Notification Channel ID
             
         Returns:
             dict: Response with success and failure counts
@@ -120,6 +128,10 @@ class FirebaseAdminService:
         success_count = 0
         failure_count = 0
         responses = []
+        
+        # Ensure data contains channel_id for local handling
+        msg_data = data or {}
+        msg_data['channel_id'] = channel_id
         
         # Send to each token individually to avoid batch API issues
         for token in tokens:
@@ -129,14 +141,14 @@ class FirebaseAdminService:
                         title=title,
                         body=body,
                     ),
-                    data=data or {},
+                    data=msg_data,
                     token=token,
                     android=messaging.AndroidConfig(
                         priority='high',
                         notification=messaging.AndroidNotification(
                             sound='default',
                             priority='high',
-                            channel_id='relact_notifications',
+                            channel_id=channel_id,
                         ),
                     ),
                     apns=messaging.APNSConfig(
@@ -178,7 +190,8 @@ class FirebaseAdminService:
         topic: str,
         title: str,
         body: str,
-        data: Dict[str, str] = None
+        data: Dict[str, str] = None,
+        channel_id: str = 'relact_default'
     ) -> bool:
         """
         Send notification to a topic (for broadcast)
@@ -188,24 +201,29 @@ class FirebaseAdminService:
             title: Notification title
             body: Notification body
             data: Additional data payload
+            channel_id: Android Notification Channel ID
             
         Returns:
             bool: True if sent successfully, False otherwise
         """
         try:
+            # Ensure data contains channel_id for local handling
+            msg_data = data or {}
+            msg_data['channel_id'] = channel_id
+            
             message = messaging.Message(
                 notification=messaging.Notification(
                     title=title,
                     body=body,
                 ),
-                data=data or {},
+                data=msg_data,
                 topic=topic,
                 android=messaging.AndroidConfig(
                     priority='high',
                     notification=messaging.AndroidNotification(
                         sound='default',
                         priority='high',
-                        channel_id='relact_notifications',
+                        channel_id=channel_id,
                     ),
                 ),
                 apns=messaging.APNSConfig(
