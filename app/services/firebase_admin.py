@@ -79,6 +79,7 @@ class FirebaseAdminService:
                     notification=messaging.AndroidNotification(
                         sound='default',
                         priority='high',
+                        channel_id='relact_notifications',
                     ),
                 ),
                 apns=messaging.APNSConfig(
@@ -135,6 +136,7 @@ class FirebaseAdminService:
                         notification=messaging.AndroidNotification(
                             sound='default',
                             priority='high',
+                            channel_id='relact_notifications',
                         ),
                     ),
                     apns=messaging.APNSConfig(
@@ -203,6 +205,7 @@ class FirebaseAdminService:
                     notification=messaging.AndroidNotification(
                         sound='default',
                         priority='high',
+                        channel_id='relact_notifications',
                     ),
                 ),
                 apns=messaging.APNSConfig(
