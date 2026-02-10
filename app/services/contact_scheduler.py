@@ -1,4 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from app.config import get_settings
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
@@ -54,6 +56,28 @@ class ContactScheduler:
             id='check_due_reminders',
             replace_existing=True
         )
+
+        # Daily App Reminders (11:00 AM IST and 8:00 PM IST)
+        # 11:00 AM IST = 05:30 UTC
+        # 8:00 PM IST = 14:30 UTC
+        settings = get_settings()
+        if settings.enable_daily_app_reminder:
+            # Morning Reminder (11:00 AM IST)
+            self._scheduler.add_job(
+                self.send_daily_app_reminder,
+                CronTrigger(hour=5, minute=30, timezone=timezone.utc),
+                id='daily_reminder_morning',
+                replace_existing=True
+            )
+            
+            # Evening Reminder (8:00 PM IST)
+            self._scheduler.add_job(
+                self.send_daily_app_reminder,
+                CronTrigger(hour=14, minute=30, timezone=timezone.utc),
+                id='daily_reminder_evening',
+                replace_existing=True
+            )
+            logger.info("✅ Daily app reminders scheduled for 11:00 AM IST and 8:00 PM IST")
 
     def start(self):
         """Start the scheduler"""
@@ -325,6 +349,72 @@ class ContactScheduler:
             import traceback
             logger.error(traceback.format_exc())
             db.rollback()
+        finally:
+            db.close()
+
+    def send_daily_app_reminder(self):
+        """
+        Send a generic reminder to all users to open the app
+        Scheduled for 11:00 AM IST and 8:00 PM IST
+        """
+        db: Session = SessionLocal()
+        try:
+            now = datetime.now(timezone.utc)
+            logger.info(f"Sending daily app reminder. Current time (UTC): {now}")
+            
+            # Get all device tokens (only those with tokens need reminders)
+            all_tokens = db.query(DeviceToken).all()
+            
+            if not all_tokens:
+                logger.warning("No device tokens found for daily reminder")
+                return
+
+            # Extract token strings
+            tokens = [dt.device_token for dt in all_tokens]
+            logger.info(f"Found {len(tokens)} devices to notify")
+
+            if not tokens:
+                return
+
+            # Send in batches of 500 (FCM limit)
+            batch_size = 500
+            total_success = 0
+            total_failure = 0
+
+            for i in range(0, len(tokens), batch_size):
+                batch = tokens[i:i + batch_size]
+                
+                # Check for empty batch
+                if not batch:
+                    continue
+
+                try:
+                    result = firebase_service.send_multicast(
+                        tokens=batch,
+                        title="⏰ App Reminder",
+                        body="Please open and run the app today. Your testing helps us move forward.",
+                        data={
+                            "type": "daily_app_reminder"
+                        },
+                        channel_id='relact_reminders'  # Using existing channel for reminders
+                    )
+                    
+                    success_count = result.get("success_count", 0)
+                    failure_count = result.get("failure_count", 0)
+                    
+                    total_success += success_count
+                    total_failure += failure_count
+                    
+                    logger.info(f"Daily Reminder Batch {i//batch_size + 1}: {success_count} sent, {failure_count} failed")
+                except Exception as batch_error:
+                    logger.error(f"Error sending batch {i//batch_size + 1}: {batch_error}")
+
+            logger.info(f"Daily app reminder finished. Total success: {total_success}, Total failure: {total_failure}")
+
+        except Exception as e:
+            logger.error(f"Error sending daily app reminder: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
         finally:
             db.close()
 

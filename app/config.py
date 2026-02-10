@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     access_token_expire_days: int = 7
     encryption_key: str
     firebase_credentials_path: str = "./firebase-service-account.json"
+    enable_daily_app_reminder: bool = True
     
     # Email Configuration
     smtp_host: str = "smtp.gmail.com"

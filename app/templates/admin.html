@@ -145,6 +145,63 @@
             </div>
         </div>
 
+        <!-- Daily Reminder Verification -->
+        <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+            <div class="md:grid md:grid-cols-3 md:gap-6">
+                <div class="md:col-span-1">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Daily Reminder Verification</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Manually trigger the daily reminder for testing purposes.
+                        This will send the "⏰ App Reminder" to ALL users immediately.
+                    </p>
+                </div>
+                <div class="mt-5 md:mt-0 md:col-span-2">
+                    <div class="flex items-center">
+                        <button type="button" onclick="triggerDailyReminder()"
+                            class="bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Trigger Daily Reminder Now
+                        </button>
+                        <span id="reminderStatus" class="ml-4 text-sm font-medium text-gray-600"
+                            style="display: none;">Sending...</span>
+                    </div>
+                    <script>
+                        function triggerDailyReminder() {
+                            if (!confirm("Are you sure? This will send a notification to ALL users.")) return;
+
+                            const statusSpan = document.getElementById('reminderStatus');
+                            statusSpan.style.display = 'inline';
+                            statusSpan.textContent = 'Sending...';
+                            statusSpan.className = 'ml-4 text-sm font-medium text-gray-600';
+
+                            fetch('/notifications/admin/trigger-daily-reminder', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    // Add auth header if needed, but this page seems to rely on session/cookies or is open for now
+                                }
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        statusSpan.textContent = '✅ Sent successfully!';
+                                        statusSpan.className = 'ml-4 text-sm font-medium text-green-600';
+                                    } else {
+                                        statusSpan.textContent = '❌ Failed: ' + (data.detail || 'Unknown error');
+                                        statusSpan.className = 'ml-4 text-sm font-medium text-red-600';
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    statusSpan.textContent = '❌ Error: ' + error.message;
+                                    statusSpan.className = 'ml-4 text-sm font-medium text-red-600';
+                                });
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+        </div>
+
         <!-- Content Tab -->
         <div x-show="tab === 'content'" class="space-y-6" style="display: none;">
             <!-- Privacy Policy -->

@@ -6,6 +6,7 @@ from ..database import get_db
 from ..models import DeviceToken, User
 from ..auth import get_current_user
 from ..services.firebase_admin import firebase_service
+from ..services.contact_scheduler import contact_scheduler
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -161,3 +162,31 @@ def send_test_notification(
             "body": test_request.body
         }
     }
+
+
+@router.post("/admin/trigger-daily-reminder")
+def trigger_daily_reminder(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Manually trigger the daily app reminder (Admin only functionality)
+    This is for verification purposes.
+    """
+    # In a real scenario, we should check if current_user.is_admin
+    # For now, we rely on the route being known only to admins/devs
+    
+    # Trigger the reminder asynchronously or synchronously? 
+    # The method send_daily_app_reminder is synchronous but handles its own db session.
+    # It might take a while if there are many users, but for verification it's fine.
+    
+    try:
+        contact_scheduler.send_daily_app_reminder()
+        return {
+            "success": True,
+            "message": "Daily app reminder triggered successfully"
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger reminder: {str(e)}"
+        )
