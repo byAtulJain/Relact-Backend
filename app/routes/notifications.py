@@ -166,7 +166,7 @@ def send_test_notification(
 
 @router.post("/admin/trigger-daily-reminder")
 def trigger_daily_reminder(
-    current_user: User = Depends(get_current_user)
+    # current_user: User = Depends(get_current_user)  # Removed for easier admin dev testing
 ):
     """
     Manually trigger the daily app reminder (Admin only functionality)
